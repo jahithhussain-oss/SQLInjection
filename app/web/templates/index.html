@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>SQL Injection Scanner</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <!-- ── Header ── -->
+  <header>
+    <div class="logo">
+      <span class="logo-icon">🛡️</span>
+      <div>
+        <h1>SQL Injection Scanner</h1>
+        <p>For authorised security testing only</p>
+      </div>
+    </div>
+  </header>
+
+  <!-- ── Tabs ── -->
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="web">🌐 Web Scanner</button>
+    <button class="tab-btn" data-tab="api">🔌 API Tester</button>
+    <button class="tab-btn" data-tab="input">🔍 Input Analyzer</button>
+    <button class="tab-btn" data-tab="history">📋 Scan History</button>
+  </nav>
+
+  <main>
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 1 — Web Scanner
+    ══════════════════════════════════════════════════════ -->
+    <section id="tab-web" class="tab-panel active">
+      <div class="card">
+        <h2>Web Application Scanner</h2>
+        <p class="hint">Crawls the target domain, discovers all forms and URL parameters, then tests each one for SQL injection.</p>
+        <div class="form-grid">
+          <div class="field full">
+            <label>Target URL</label>
+            <input id="web-url" type="text" placeholder="https://target.example.com" />
+          </div>
+          <div class="field">
+            <label>Max Pages</label>
+            <input id="web-maxpages" type="number" value="30" min="1" max="500" />
+          </div>
+          <div class="field">
+            <label>Delay (seconds)</label>
+            <input id="web-delay" type="number" value="0.3" min="0" max="5" step="0.1" />
+          </div>
+        </div>
+        <button class="btn-primary" id="web-scan-btn" onclick="startScan('web')">▶ Start Scan</button>
+      </div>
+      <div id="web-results"></div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 2 — API Tester
+    ══════════════════════════════════════════════════════ -->
+    <section id="tab-api" class="tab-panel">
+      <div class="card">
+        <h2>API Security Tester</h2>
+        <p class="hint">Tests a single API endpoint by injecting payloads into the provided parameters.</p>
+        <div class="form-grid">
+          <div class="field full">
+            <label>API Endpoint URL</label>
+            <input id="api-url" type="text" placeholder="https://api.example.com/users" />
+          </div>
+          <div class="field full">
+            <label>Parameters <span class="sub">(key=value&amp;key2=value2  or  JSON)</span></label>
+            <input id="api-params" type="text" placeholder='id=1&name=admin  or  {"id":"1","name":"admin"}' />
+          </div>
+          <div class="field">
+            <label>HTTP Method</label>
+            <select id="api-method">
+              <option>GET</option><option>POST</option>
+              <option>PUT</option><option>PATCH</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Request Body Format</label>
+            <select id="api-format">
+              <option value="json">JSON  (application/json)</option>
+              <option value="form">Form  (application/x-www-form-urlencoded)</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Delay (seconds)</label>
+            <input id="api-delay" type="number" value="0.3" min="0" max="5" step="0.1" />
+          </div>
+        </div>
+
+        <!-- ── Request Headers ── -->
+        <div class="headers-section">
+          <div class="headers-title">
+            <span>Request Headers <span class="sub">(optional — Authorization, Cookie, X-API-Key, etc.)</span></span>
+            <button class="btn-secondary" type="button" onclick="addHeaderRow()">+ Add Header</button>
+          </div>
+          <div id="headers-container">
+            <!-- Common presets row -->
+            <div class="header-presets">
+              <span class="preset-label">Quick add:</span>
+              <button class="preset-btn" onclick="addPreset('Authorization','Bearer ')">Authorization</button>
+              <button class="preset-btn" onclick="addPreset('Cookie','')">Cookie</button>
+              <button class="preset-btn" onclick="addPreset('X-API-Key','')">X-API-Key</button>
+              <button class="preset-btn" onclick="addPreset('Content-Type','application/json')">Content-Type</button>
+              <button class="preset-btn" onclick="addPreset('Accept','application/json')">Accept</button>
+              <button class="preset-btn" onclick="addPreset('X-Auth-Token','')">X-Auth-Token</button>
+            </div>
+            <div id="header-rows"></div>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="api-scan-btn" onclick="startScan('api')">▶ Start Scan</button>
+      </div>
+      <div id="api-results"></div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 3 — Input Analyzer
+    ══════════════════════════════════════════════════════ -->
+    <section id="tab-input" class="tab-panel">
+      <div class="card">
+        <h2>Input Analyzer</h2>
+        <p class="hint">Statically analyses a string for SQL injection patterns. No HTTP requests are made.</p>
+        <div class="field full">
+          <label>User Input to Analyse</label>
+          <textarea id="input-text" rows="4" placeholder="Paste any user input here, e.g.  admin' OR '1'='1"></textarea>
+        </div>
+        <button class="btn-primary" onclick="analyzeInput()">🔍 Analyse</button>
+      </div>
+      <div id="input-results"></div>
+    </section>
+
+    <!-- ══════════════════════════════════════════════════════
+         TAB 4 — Scan History
+    ══════════════════════════════════════════════════════ -->
+    <section id="tab-history" class="tab-panel">
+      <div class="card">
+        <h2>Scan History</h2>
+        <button class="btn-secondary" onclick="loadHistory()">↻ Refresh</button>
+      </div>
+      <div id="history-list"></div>
+    </section>
+
+  </main>
+
+  <!-- ── Scan Result Modal ── -->
+  <div id="modal-overlay" class="modal-overlay hidden" onclick="closeModal()">
+    <div class="modal" onclick="event.stopPropagation()">
+      <button class="modal-close" onclick="closeModal()">✕</button>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
