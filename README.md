@@ -10,6 +10,14 @@
 security-scanner/
 ├── app/
 │   ├── main.py                  # CLI entry point
+│   ├── web/
+│   │   ├── app.py               # Flask application factory
+│   │   ├── routes.py            # Flask routes (web UI API)
+│   │   ├── templates/
+│   │   │   └── index.html       # Single-page web UI
+│   │   └── static/
+│   │       ├── style.css        # Dark-theme stylesheet
+│   │       └── app.js           # Frontend logic
 │   ├── crawler/
 │   │   ├── crawler.py           # BFS web crawler
 │   │   └── extractor.py         # HTML form / link / param extractor
@@ -37,7 +45,64 @@ pip install -r requirements.txt
 
 ---
 
-## Usage
+## Running the Web Application
+
+The web UI is the recommended way to use the scanner. It wraps all three modes in a browser-based dashboard.
+
+### Start the server
+
+```bash
+python -m app.web.app
+```
+
+Then open **http://127.0.0.1:5000** in your browser.
+
+The server runs on port `5000` by default. You should see:
+
+```
+  SQL Injection Scanner — Web UI
+  Open http://127.0.0.1:5000 in your browser
+```
+
+### Web UI tabs
+
+| Tab | What it does |
+|-----|-------------|
+| **🌐 Web Scanner** | Enter a domain URL — crawls all pages, discovers forms and URL parameters, tests each one for SQLi. Shows a live log stream and results table. |
+| **🔌 API Tester** | Test a single API endpoint. Supports GET/POST/PUT/PATCH, JSON or form-encoded body, and custom request headers (Authorization, Cookie, X-API-Key, etc.). |
+| **🔍 Input Analyzer** | Paste any string for instant static analysis — no HTTP requests made. Highlights matched patterns with severity ratings. |
+| **📋 Scan History** | Lists all scans from the current session. Click View to re-open any previous scan's full results. |
+
+### API Tester — passing custom headers
+
+The API Tester tab has a **Request Headers** section below the parameters field.
+
+**Quick-add presets** (one click):
+- `Authorization` — paste a Bearer token or Basic auth value
+- `Cookie` — paste a session cookie string
+- `X-API-Key` — API key header
+- `Content-Type` — override the content type
+- `Accept` — set accepted response format
+- `X-Auth-Token` — token-based auth header
+
+**Add any custom header** using the `+ Add Header` button.
+
+Example for a JWT-protected API:
+1. Enter the endpoint URL and body parameters
+2. Click the **Authorization** preset
+3. Type `Bearer eyJhbGci...` in the value field
+4. Select method `POST` and format `JSON`
+5. Click **▶ Start Scan**
+
+### Saving results
+
+Results are displayed in the browser. To also save a JSON report, use the CLI modes described below.
+
+---
+
+## CLI Usage
+
+The CLI is available for scripting and automation.
 
 ### Mode 1 — Web Scanner (crawl a domain)
 
@@ -84,7 +149,7 @@ Options:
 | `--params` | required | Parameters as `key=val&key2=val2` or JSON |
 | `--method` | GET | HTTP method: GET, POST, PUT, PATCH |
 | `--delay` | 0.3 | Seconds between requests |
-| `--output` | — | Save JSON report to file |
+| `--output` | — | Save JSON findings to file |
 
 ---
 
@@ -116,6 +181,17 @@ Options:
 | **UNION-based** | Detects version strings or numeric markers injected via UNION |
 | **Static pattern** | Regex rules matching known SQLi patterns in raw input |
 
+### WAF / Protection detection
+
+The scanner automatically detects when an endpoint is protected and cannot be scanned:
+
+| Condition | What happens |
+|-----------|-------------|
+| HTTP 422 with "suspicious behavior" | Scan stops — WAF or captcha protection detected |
+| HTTP 401 / 403 | Scan stops — authentication required |
+| HTTP 429 | Scan stops — rate limited |
+| Individual payload blocked | Payload skipped, scan continues with next payload |
+
 ---
 
 ## Output (JSON report)
@@ -143,6 +219,22 @@ Options:
   ]
 }
 ```
+
+---
+
+## Practice Targets
+
+To test the scanner safely, run a vulnerable application locally:
+
+```bash
+# DVWA (Damn Vulnerable Web Application)
+docker run --rm -p 80:80 vulnerables/web-dvwa
+python -m app.main web --url http://localhost
+
+# Or use the web UI at http://127.0.0.1:5000
+```
+
+Other options: [bWAPP](http://www.itsecgames.com/), [WebGoat](https://owasp.org/www-project-webgoat/), [HackTheBox](https://www.hackthebox.com/).
 
 ---
 
